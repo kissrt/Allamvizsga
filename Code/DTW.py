@@ -1,4 +1,4 @@
-from math import sqrt
+from math import *
 import os
 import settings as st
 import pandas as pd
@@ -10,9 +10,9 @@ def DTW_algorithm(Sig1,Sig2):
     m=len(Sig2)
     DTW = [[0] * m for i in range(n)]
     for i in range (1,n):
-        DTW[i][0] = 9999
+        DTW[i][0] = inf
     for i in range (1,m):
-        DTW[0][i] = 9999
+        DTW[0][i] = inf
 
     DTW[0][0] = 0
 
