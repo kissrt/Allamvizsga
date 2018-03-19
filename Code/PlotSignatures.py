@@ -56,7 +56,7 @@ class MOBISIGDataset(IDataset):
         y = dataset['y']
         x = [int(e) for e in x]
         y = [int(e) for e in y]
-        return x, y
+        return x,y
 
     def set_label_text(self):
         file_num = (self.signatures[self.signature_index].split("_")[4]).split(".")[0]
@@ -203,6 +203,8 @@ def refresh_window():
     dataset.set_label_text()
     [x, y] = dataset.read_csv_file_()
     subplot.plot(x, y)
+    if (dropDownList.get() == "MOBISIG"):
+        subplot.invert_yaxis()
     figure_canvas.get_tk_widget().pack()
     figure_canvas.draw()
 
@@ -211,7 +213,9 @@ def plot(*args):
     subplot.clear()
     dataset.set_label_text()
     [x, y] = dataset.read_csv_file_()
-    subplot.plot(x, y)
+    subplot.plot(x,y)
+    if (dropDownList.get() == "MOBISIG"):
+        subplot.invert_yaxis()
     figure_canvas.get_tk_widget().pack()
     figure_canvas.draw()
 
