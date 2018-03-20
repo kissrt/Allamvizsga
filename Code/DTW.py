@@ -6,8 +6,8 @@ import sys
 
 
 def DTW_algorithm(Sig1,Sig2):
-    n=len(Sig1)
-    m=len(Sig2)
+    n=len(Sig1[0])
+    m=len(Sig2[0])
     DTW = [[0] * m for i in range(n)]
     for i in range (1,n):
         DTW[i][0] = inf

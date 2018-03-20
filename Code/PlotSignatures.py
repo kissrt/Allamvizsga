@@ -202,7 +202,7 @@ def refresh_window():
     subplot.clear()
     dataset.set_label_text()
     [x, y] = dataset.read_csv_file_()
-    subplot.plot(x, y)
+    subplot.plot(x, y, marker='.', linestyle='none')
     if (dropDownList.get() == "MOBISIG"):
         subplot.invert_yaxis()
     figure_canvas.get_tk_widget().pack()
@@ -213,7 +213,7 @@ def plot(*args):
     subplot.clear()
     dataset.set_label_text()
     [x, y] = dataset.read_csv_file_()
-    subplot.plot(x,y)
+    subplot.plot(x,y,marker = '.',linestyle = 'none')
     if (dropDownList.get() == "MOBISIG"):
         subplot.invert_yaxis()
     figure_canvas.get_tk_widget().pack()
