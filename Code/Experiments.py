@@ -8,6 +8,8 @@ import matplotlib
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 import pandas as pd
+import numpy as np
+from scipy import ndimage
 
 DATASET_OPTIONS = [
         "MCYT",
@@ -15,11 +17,11 @@ DATASET_OPTIONS = [
 ]
 
 FEATURES_OPTIONS = [
-        "X",
-        "Y",
-        "X'",
-        "Y'",
-        "P"
+        "XY",
+        "X'Y'",
+        "XYX'Y'",
+        "XYP",
+        "XYX'Y'P"
 
 ]
 
@@ -201,7 +203,10 @@ class ConfigurePlotSignatureWindow:
 
 class ConfigureLocalFeaturesWindow:
     def __init__(self):
-        Label(frame_experiments, text="Dataset", font=("Helvetica", 14), background='white').grid(row=0, column=1, padx=5, pady=35)
+        dataset_label_frame = LabelFrame(frame_experiments)
+        dataset_label_frame.grid(row=0, columnspan=7, sticky='W', \
+                     padx=20, pady=10, ipadx=300, ipady=40)
+        Label(frame_experiments, text="Dataset:", font=("Helvetica", 14)).grid(row=0, column=1, padx=5, pady=35)
 
         w = OptionMenu(frame_experiments, dropDownList_dataset, *DATASET_OPTIONS)
         w.config(width=20)
@@ -209,29 +214,38 @@ class ConfigureLocalFeaturesWindow:
         dropDownList_dataset.set(DATASET_OPTIONS[0])  # default value
         w.grid(row=0, column=2, padx=5, pady=35)
 
-        Label(frame_experiments, text="Users", font=("Helvetica", 14), background='white').grid(row=1, column=0,padx=5, pady=35)
-        Label(frame_experiments, text="From", font=("Helvetica", 12), background='white').grid(row=1, column=1, padx=5, pady=35)
+
+        Label(frame_experiments, text="Users:", font=("Helvetica", 14),bg="white").grid(row=1, column=0,padx=20, pady=20)
+        Label(frame_experiments, text="From", font=("Helvetica", 12),bg="white").grid(row=1, column=1, padx=0, pady=0)
         scaleFROM.config(length=150)
         scaleFROM.bind("<ButtonRelease-1>", scaleFrom_changed)
         scaleFROM.grid(row=1, column=2, padx=5, pady=35)
 
         # scale - forgery signature number
-        Label(frame_experiments, text="To", font=("Helvetica", 12), background='white').grid(row=1, column=3, padx=5, pady=35)
+        Label(frame_experiments, text="To", font=("Helvetica", 12),bg="white").grid(row=1, column=3, padx=0, pady=0)
         scaleTO.config(length=150)
         scaleTO.grid(row=1, column=4, padx=5, pady=35)
 
-        Label(frame_experiments, text="Features", font=("Helvetica", 14), background='white').grid(row=2, column=1, padx=5, pady=35)
+        features_label_frame = LabelFrame(frame_experiments)
+        features_label_frame.grid(row=2, columnspan=7, sticky='W', \
+                                 padx=20, pady=10, ipadx=300, ipady=40)
+        Label(frame_experiments, text="Features:", font=("Helvetica", 14)).grid(row=2, column=1, padx=20, pady=10)
         w = OptionMenu(frame_experiments, dropDownList_features, *FEATURES_OPTIONS)
         w.config(width=20)
         dropDownList_features.set(FEATURES_OPTIONS[0])  # default value
         w.grid(row=2, column=2,padx=5, pady=35)
 
-        Label(frame_experiments, text="Results", font=("Helvetica", 14), background='white').grid(row=3, column=1, padx=5, pady=35)
+
+        results_label_frame = LabelFrame(frame_experiments)
+        results_label_frame.grid(row=3, columnspan=7, sticky='W', \
+                                  padx=20, pady=10, ipadx=300, ipady=40)
+
+        Label(frame_experiments, text="Results:", font=("Helvetica", 14)).grid(row=3, column=1, padx=5, pady=35)
         w = OptionMenu(frame_experiments, dropDownList_results, *RESULTS_OPTIONS)
         w.config(width=20)
         dropDownList_results.set(RESULTS_OPTIONS[0])  # default value
         w.grid(row=3, column=2, padx=5, pady=35)
-        run_button.config(width=30)
+        run_button.config(width=15)
         run_button.grid(row=4, column=4, padx=5, pady=35)
 
         notebook.add(frame_experiments, text='LocalFeatures')
@@ -240,9 +254,15 @@ class ConfigureLocalFeaturesWindow:
 
 def read_csv_file_(file):
     dataset = pd.read_csv(file)
-    x = dataset['X']
-    y = dataset[' Y']
-    p=dataset[' P']
+    if dropDownList_dataset.get()=='MCYT':
+        x = dataset['X']
+        y = dataset[' Y']
+        p = dataset[' P']
+    else:
+         x = dataset['x']
+         y = dataset['y']
+         p = dataset['pressure']
+
     x = [int(e) for e in x]
     y = [int(e) for e in y]
     p=[int(e) for e in p]
@@ -261,6 +281,7 @@ def settings_changed(*args):
             scaleGEN.config(to=45)
         users_listbox.select_set(0)
         refresh_window()
+
 def scaleFrom_changed(*args):
     scaleTO.config(from_=scaleFROM.get()+1)
 
@@ -272,38 +293,90 @@ def dataset_changed(*args):
         scaleFROM.config(to=20)
         scaleTO.config(to=45)
 
+def concat_features_to_matrix(x,y,p):
+    sig = [[0] * 3 for i in range(len(x))]
+    for i in range(0, len(x)):
+        sig[i][0] = x[i];
+        sig[i][1] = y[i];
+        sig[i][2] = p[i];
 
-def ComputeScores(genuines, forgerys):
+    features = np.array([])
+    return features
+
+def ComputeScores(genuines, forgerys,dataset_path):
     signature_template = genuines[:st.TEMPLATE_SIZE]
+    scores = []
     # Positive score list
-    positive_scores = []
     for i in range(0,st.NUM_GENUINE):
-        x1,y1,p1= read_csv_file_(os.path.join(st.DIRECTORY_PATH_MCYT,genuines[15+i]))
+        x,y,p= read_csv_file_(os.path.join(dataset_path,genuines[15+i]))
+        sign1 = dtw.concat_parameters_matrix(x, y, p)
         sumDist=0
-        positive_scores = []
         for j in range(0,st.TEMPLATE_SIZE):
-            x,y,p = read_csv_file_(os.path.join(st.DIRECTORY_PATH_MCYT,signature_template[j]))
-            sign1 = dtw.concat_parameters_matrix(x,y,p)
+            x1,y1,p1 = read_csv_file_(os.path.join(dataset_path,signature_template[j]))
             sign2= dtw.concat_parameters_matrix(x1,y1,p1)
             d = dtw.DTW_algorithm(sign1,sign2)
-            sumDist += d
-            positive_scores = positive_scores+[1 / (1 + sumDist / st.TEMPLATE_SIZE)]
-        print(positive_scores)
+            sumDist = sumDist + d
+        positive_score = 1 / (1 + sumDist / st.TEMPLATE_SIZE)
+        scores= scores + [[1,positive_score]]
     #Negative score list
-    negative_scores = []
     for i in range(0, st.NUM_FORGERIES):
-            x1, y1, p1 = read_csv_file_(os.path.join(st.DIRECTORY_PATH_MCYT, forgerys[i]))
+            x, y, p = read_csv_file_(os.path.join(dataset_path, forgerys[i]))
+            sign1 = dtw.concat_parameters_matrix(x, y, p)
             sumDist = 0
-            negative_scores = []
             for j in range(0, st.TEMPLATE_SIZE):
-                x, y, p = read_csv_file_(os.path.join(st.DIRECTORY_PATH_MCYT, signature_template[j]))
-                sign1 = dtw.concat_parameters_matrix(x, y, p)
+                x1, y1, p1 = read_csv_file_(os.path.join(dataset_path, signature_template[j]))
                 sign2 = dtw.concat_parameters_matrix(x1, y1, p1)
                 d = dtw.DTW_algorithm(sign1, sign2)
-                sumDist += d
-                negative_scores = negative_scores + [1 / (1 + sumDist / st.TEMPLATE_SIZE)]
-            print(negative_scores)
+                sumDist = sumDist + d
+            negative_score = 1/(1 + sumDist / st.TEMPLATE_SIZE)
+            scores = scores + [[0,negative_score]]
+    data_frame = pd.DataFrame(scores,dtype=float)
+    data_frame.to_csv(st.CSV_FILENAME, index=False,header=None,mode='a')
+
+def standardize_signatureXY_X1Y1(x,y):
+    n = len(x)
+    mx = np.mean(x)
+    sdx = np.std(x)
+    my = np.mean(y)
+    sdy = np.std(y)
+    x1=[]
+    y1=[]
+    for i in range(0,n):
+        x1[i]=(x[i]-mx)/sdx
+        y1[i]=(y[i]-my)/sdy
+    return x1,y1
+
+def compute_local_features(x,y):
+    #     TODO csak akkor ha kell x1y1
+    n = len(x)
+    x1 = []
+    y1 = []
+    x1[0]=0
+    y1[0] = 0
+    for i in range(1,(n-1)):
+        x1[i] = x[i] + x[i - 1]
+        y1[i] = y[i] + y[i - 1]
+    return x1,y1
+
+def standardize_signatureP(p):
+    n = len(p)
+    mp = np.mean(p)
+    sdp = np.std(p)
+    p1 = []
+    for i in range(0, n):
+        p1[i] = (p[i] - mp)/sdp
+    return p1
+
+def distanceXY(x,y,x1,y1):
+    return np.sqrt((x - x1) * (x - x1) + (y - y1) * (y - y1))
+
+def distanceXYX1Y1(x,y,xa,yb,x1,y1,x1a,y1a):
+    return np.sqrt((x - xa) * (x - xa) + (y - yb) * (y - yb) + (x1 - x1a) * (y1 - y1a))
+
 def run_local_features(*args):
+    scores=[]
+    data_frame = pd.DataFrame(scores, dtype=float)
+    data_frame.to_csv(st.CSV_FILENAME, index=False, header=None)
     directorys = []
     if (dropDownList_dataset.get() == "MCYT"):
         dir_route = st.DIRECTORY_PATH_MCYT
@@ -314,11 +387,17 @@ def run_local_features(*args):
     for dir in directorys:
         directory = os.path.join(dir_route,dir)
         signatures = os.listdir(directory)
-        genuines = [os.path.join(dir,f) for f in signatures if (f[4:5]=='v')]
-        forgerys = [os.path.join(dir,f) for f in signatures if (f[4:5]=='f')]
-
-        ComputeScores(genuines,forgerys)
-
+        if (dropDownList_dataset.get() == "MCYT"):
+            genuines = [os.path.join(dir,f) for f in signatures if (f[4:5]=='v')]
+            forgerys = [os.path.join(dir,f) for f in signatures if (f[4:5]=='f')]
+        else:
+            genuines = [os.path.join(dir, f) for f in signatures if (f[5:6] == 'G')]
+            forgerys = [os.path.join(dir, f) for f in signatures if (f[5:6] == 'F')]
+        ComputeScores(genuines,forgerys,dir_route)
+    if dropDownList_results.get()  == 'EER':
+        print(dtw.calculate_eer(st.CSV_FILENAME))
+    else:
+        dtw.plotAUC(st.CSV_FILENAME)
 
 def refresh_window():
         dataset.calc_signatures_directory()
@@ -357,14 +436,19 @@ def first():
         dataset.calculate_first_file()
         refresh_window()
 
+def transform():
+    subplot.invert_yaxis()
+    subplot.invert_xaxis()
+    figure_canvas.get_tk_widget().pack()
+    figure_canvas.draw()
 
 def last():
         dataset.calculate_last_file()
         refresh_window()
 
-
 if __name__ == "__main__":
         window = Tk()
+        window.resizable(width=False, height=False)
         notebook = ttk.Notebook(window)
 
         frame_plot_signature = Frame(notebook, background='white')
@@ -376,6 +460,7 @@ if __name__ == "__main__":
         scaleFOR.bind("<ButtonRelease-1>", settings_changed)
         users_listbox = Listbox(frame, selectmode=SINGLE, font=("Helvetica", 12), width=15, height=17)
         figure = Figure(figsize=(5, 5))
+
         subplot = figure.add_subplot(111)
         figure_canvas = FigureCanvasTkAgg(figure, master=frame_plot_signature)
         btnnext = Button(frame_plot_signature, text=u"\u23F5", command=next, font=("Helvetica", 15))
@@ -390,7 +475,9 @@ if __name__ == "__main__":
         btnlast = Button(frame_plot_signature, text=u"\u23E9", command=last, font=("Helvetica", 15))
         btnlast.pack()
         btnlast.place(x=470, y=490)
-
+        btnlast = Button(frame_plot_signature, text=u"\u27f2", command=transform, font=("Helvetica", 15))
+        btnlast.pack()
+        btnlast.place(x=600, y=490)
         dataset = MCYTDataset()
         ConfigurePlotSignatureWindow()
 
@@ -398,7 +485,7 @@ if __name__ == "__main__":
         dropDownList_dataset = StringVar(frame_experiments)
 
         scaleFROM = Scale(frame_experiments, from_=1, to=25, orient=HORIZONTAL)
-        scaleTO = Scale(frame_experiments, from_=2, to=20, orient=HORIZONTAL)
+        scaleTO = Scale(frame_experiments, from_=1, to=20, orient=HORIZONTAL)
         dropDownList_features= StringVar(frame_experiments)
         dropDownList_results = StringVar(frame_experiments)
         run_button = Button(frame_experiments, text="RUN",command = run_local_features)
