@@ -415,8 +415,6 @@ def DTW_algorithm(Sig1,Sig2):
 
     return DTW[n][m]
 
-
-
 def distanceXY(x,y,x1,y1):
     return np.sqrt((x - x1) * (x - x1) + (y - y1) * (y - y1))
 def distanceXYP(x,y,x1,y1,pa,pb):
