@@ -29,6 +29,7 @@ RESULTS_OPTIONS = [
     "AUC"
 
 ]
+
 class IDataset:
 
         def calc_signatures_directory(self): pass
@@ -250,22 +251,6 @@ class ConfigureLocalFeaturesWindow:
         notebook.add(frame_experiments, text='LocalFeatures')
         notebook.pack(expand=1, fill="x")
         window.mainloop()
-#
-# def read_csv_file_(file):
-#     dataset = pd.read_csv(file)
-#     if dropDownList_dataset.get()=='MCYT':
-#         x = dataset['X']
-#         y = dataset[' Y']
-#         p = dataset[' P']
-#     else:
-#          x = dataset['x']
-#          y = dataset['y']
-#          p = dataset['pressure']
-#
-#     x = [int(e) for e in x]
-#     y = [int(e) for e in y]
-#     p=[int(e) for e in p]
-#     return x, y,p
 
 def settings_changed(*args):
         users_listbox.delete(0, END)
@@ -291,16 +276,6 @@ def dataset_changed(*args):
     else:
         scaleFROM.config(to=20)
         scaleTO.config(to=45)
-
-def concat_features_to_matrix(x,y,p):
-    sig = [[0] * 3 for i in range(len(x))]
-    for i in range(0, len(x)):
-        sig[i][0] = x[i];
-        sig[i][1] = y[i];
-        sig[i][2] = p[i];
-
-    features = np.array([])
-    return features
 
 def ComputeScores(genuines, forgerys,dataset_path):
     signature_template = genuines[:st.TEMPLATE_SIZE]
