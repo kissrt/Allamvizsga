@@ -9,6 +9,7 @@ import numpy as np
 from scipy.interpolate import interp1d
 from scipy.optimize import brentq
 from sklearn import metrics
+import matplotlib.pyplot as plt
 
 DATASET_OPTIONS = [
         "MCYT",
@@ -320,7 +321,6 @@ def compute_local_features(x,y):
         y1[i] = y[i] - y[i - 1]
     return x1,y1
 
-
 def read_csv_file_to_matrix(file):
     feature=dropDownList_features.get()
     if dropDownList_dataset.get() == 'MCYT':
@@ -447,6 +447,30 @@ def calculate_eer(scores):
     eer = brentq(lambda x: 1. - x - interp1d(fpr_no, tpr_no)(x), 0., 1.)
     return eer
 
+def plotAUC(scorefilename ):
+    data_no = pd.read_csv(scorefilename, names=['label','score'])
+    labels_no = data_no['label']
+    scores_no = data_no['score']
+    labels_no = [int(e)   for e in labels_no]
+    scores_no = [float(e) for e in scores_no]
+    auc_value_no =   metrics.roc_auc_score(pd.np.array(labels_no), pd.np.array(scores_no))
+
+    fpr_no, tpr_no, thresholds_no = metrics.roc_curve(labels_no, scores_no, pos_label=1)
+    eer_no = brentq(lambda x: 1. - x - interp1d(fpr_no, tpr_no)(x), 0., 1.)
+    # thresh_no = interp1d(fpr_no, thresholds_no)(eer_no)
+    plt.figure()
+    lw = 2
+    plt.plot(fpr_no,     tpr_no,     color='black', lw=lw, label='AUC = %0.4f' % auc_value_no)
+    plt.plot([0, 1], [0, 1], color='darkorange', lw=lw, linestyle='--')
+    plt.xlim([0.0, 1.0])
+    plt.ylim([0.0, 1.05])
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.title('AUC')
+    plt.legend(loc="lower right")
+    plt.show()
+    return
+
 def run_local_features(*args):
     scores=[]
     data_frame = pd.DataFrame(scores, dtype=float)
@@ -479,7 +503,7 @@ def run_local_features(*args):
         print('Errs mean:' )
         print("{0:.2f}".format(np.mean(eers)))
     else:
-        dtw.plotAUC(st.CSV_FILENAME)
+        plotAUC(st.CSV_FILENAME)
 
 def refresh_window():
         dataset.calc_signatures_directory()
