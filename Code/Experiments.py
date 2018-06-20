@@ -1,15 +1,11 @@
 from tkinter import *
 import os
 from tkinter import ttk
-
 import settings as st
-import DTW as dtw
-import matplotlib
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 import pandas as pd
 import numpy as np
-from scipy import ndimage
 from scipy.interpolate import interp1d
 from scipy.optimize import brentq
 from sklearn import metrics
@@ -501,11 +497,14 @@ def run_local_features(*args):
             genuines = [os.path.join(dir, f) for f in signatures if (f[5:6] == 'G')]
             forgerys = [os.path.join(dir, f) for f in signatures if (f[5:6] == 'F')]
         score = ComputeScores(genuines,forgerys,dir_route)
-        eers.append(calculate_eer(score))
+        print(dir + '- user eer:')
+        eer = calculate_eer(score)
+        print("{0:.2f}".format(eer))
+        eers.append(eer)
 
     if dropDownList_results.get()  == 'EER':
         print('Errs mean:' )
-        print(np.mean(eers))
+        print("{0:.2f}".format(np.mean(eers)))
     else:
         dtw.plotAUC(st.CSV_FILENAME)
 
